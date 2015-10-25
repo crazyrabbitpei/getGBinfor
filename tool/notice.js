@@ -36,7 +36,7 @@ function convert(time,body,url,comment,from){//from:comment or article
             }
     transporter.sendMail({
         from: 'crazyrabbit@boardgameinfor',
-        to: 'willow111333@gmail.com',
+        to: '',
         subject:'[FB] '+matchlist,
         text:record
     });
