@@ -15,7 +15,7 @@ shadowap格式
         "yoyo":"App Secret"
 }
 
-以及新增control資料夾下新增list file
+以及新增control資料夾，並在下面新增list file
 格式
 {
         "game":"game1,game2"
