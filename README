@@ -1,0 +1,25 @@
+git clone完後，請新增servive資料夾並且在下面新增兩個檔案shadow, shadowap
+
+shadow格式
+{
+        "id":"track id",    
+        "limit":20  //一次抓多少筆record,
+        "version":"v2.5",   //graph api version
+        "dir":"./fb_data",  //detail data:crawled list
+        "depth":2  //每次請求會回傳limit個結果，若需繼續往下找，可在這邊設定next page 深度
+}
+
+shadowap格式
+{
+        "id":"App ID",
+        "yoyo":"App Secret"
+}
+
+以及新增control資料夾下新增list file
+格式
+{
+        "game":"game1,game2"
+
+}
+
+每筆想追蹤的物品用,分隔
