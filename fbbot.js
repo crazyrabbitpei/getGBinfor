@@ -26,18 +26,29 @@ function crawlerFB(token){
         uri: "https://graph.facebook.com/"+version+"/"+groupid+"/feed?access_token="+token+"&limit="+limit,
     },function(error, response, body){
         feeds = JSON.parse(body);
+        if(feeds['error']){
+            fs.appendFile(dir+"/"+groupid+"/err_log",body,function(){});
+            console.log("error");
+            return;
+        }
         //console.log(feeds['paging'].next);
         fs.writeFile(dir+"/"+groupid+"/nextpage",feeds['paging'].next,function(){
         });
         //getFeedsContent(feeds,token);
         isCrawled(feeds,token,function(result){
-
+            if(result!=-1){
+                try{
+                    nextPage(feeds['paging'].next,depth-1,token);
+                }
+                catch(e){
+                    console.log("crawlerFB:"+e);
+                }
+            }
+            else{
+                return;
+            }
         });
-        try{
-            nextPage(feeds['paging'].next,depth-1,token);
-        }
-        catch(e){
-        }
+
     });
 }
 
@@ -55,20 +66,26 @@ function nextPage(npage,depth_link,token){
         uri:npage,
     },function(error, response, body){
         feeds = JSON.parse(body);
-        if(feeds['paging']){
+        if(feeds['error']){
+            fs.appendFile(dir+"/"+groupid+"/err_log",body,function(){});
+            console.log("error");
+            return;
+        }
+        if(feeds['data']){
             //console.log(feeds['paging'].next);
             fs.writeFile(dir+"/"+groupid+"/nextpage",feeds['paging'].next,function(){
             });
             //getFeedsContent(feeds,token,0);
             isCrawled(feeds,token,function(result){
-
+                if(result!=-1){
+                    if(depth_link-1!=0){
+                        nextPage(feeds['paging'].next,depth_link-1,token);
+                    }
+                }
+                else{
+                    return;
+                }
             });
-            if(depth_link-1!=0){
-                nextPage(feeds['paging'].next,depth_link-1,token);
-            }
-        }
-        else{
-            console.log("fin");
         }
     });
 
@@ -136,21 +153,25 @@ function isCrawled(feeds,token,fin){
                     console.log("[id]:"+article_id+" skip, crawler end.");
                     check = 0;
                     //break;
-                    fin(0);        
+                    fin(-1);
+                    return;
                 }
                 //if not, check whether the article is updated by the author or not. 
                 else{
                     console.log("[id]:"+article_id+" was updated:");
                     //console.log(article_id+"-> old time="+old_time[1]+" article_updated="+article_updated);
                     //console.log("https://graph.facebook.com/"+version+"/"+full_id+"/?fields=from,comments&access_token="+token);
-                    
-
                     request({
                         uri: "https://graph.facebook.com/"+version+"/"+full_id+"/?fields=message,from,comments,updated_time&access_token="+token,
                     },function(error, response, body){
                         var index=-10,index_author="test";
                         detail  = JSON.parse(body);
                         //console.log("detail:"+body);
+                        if(detail['error']){
+                            fs.appendFile(dir+"/"+groupid+"/err_log",body,function(){});
+                            console.log("error");
+                            return;
+                        }
                         if(detail['comments']){
                             comments_length = detail['comments'].data.length;
                             //console.log("[id]:"+detail['id']+" has comments_length="+comments_length);
@@ -199,7 +220,7 @@ function isCrawled(feeds,token,fin){
                                 a_id = detail['id'].split("_");
                                 //console.log("a_id[1]:"+a_id[1]);
                                 for(k=1;k<index_authors_a.length;k++){
-                                    if(typeof detail['comments'].data[index_authors_a[k]].message=="undefined"){
+                                    if(typeof detail['comments'].data[index_authors_a[k]]=="undefined"){
                                         break;
                                     }
                                     //console.log("=>"+index_authors_a[k]);
@@ -239,7 +260,7 @@ function isCrawled(feeds,token,fin){
                 }
             }
             else{
-                //console.log("new");
+                console.log("new");
                 blink="https://www.facebook.com/groups/"+groupid+"/permalink/"+article_id;
                 matchGame.convert(article_updated,feeds['data'][i].message,blink,"","ori");
                 /*
@@ -248,7 +269,7 @@ function isCrawled(feeds,token,fin){
                 */
                 fs.appendFile(dir+"/"+groupid+"/crawled",","+article_id+"@"+article_updated,function(){
                 });
-                fin(-1);
+                fin(1);
             }
             if(check==0){
                 break;

@@ -9,6 +9,8 @@ var he = require('he');
 var punycode = require('punycode');
 var dateFormat = require('dateformat');
 var now = new Date();
+var nodemailer = require('nodemailer');
+var transporter = nodemailer.createTransport();
 var matchGame = require('./tool/notice');
 var fbBot = require('./fbbot');
 
@@ -59,8 +61,13 @@ catch (err) {
 }
 finally{
     get_accessToken(function(token){
-        console.log("get token");
-        setBot(token);       
+        console.log("token:"+token);
+        if(token=="error"){
+            return;
+        }
+        else{
+            setBot(token);       
+        }
     });
 }
 
@@ -71,9 +78,14 @@ function get_accessToken(fin){
     //uri: "https://graph.facebook.com/"+version+"/"+groupid+"/feed?access_token="+accesst+"&limit="+limit,
     },function(error, response, body){
         var token = JSON.parse(body);
-        //console.log(token['access_token']);
-        //crawlerFB(token['access_token']);
-        fin(token['access_token']);
+        if(token['error']){
+            fs.appendFile(dir+"/"+groupid+"/err_log",body,function(){});
+            fin("error");
+            return;
+        }
+        else{
+            fin(token['access_token']);
+        }
     });
 
 }
@@ -82,14 +94,24 @@ function setBot(token){
     //console.log("access:"+token);
     //fbBot.crawlerFB(token);
     var per=1;
-    new CronJob('00 */2 7-23,0-1 * * *', function() {//http://sweet.io/p/ncb000gt/node-cron
-        /*
-        var now = new Date();
-        service1 = JSON.parse(fs.readFileSync('./service/shadow'));
-        per = parseInt(service1['readperm']);
-        */
-        //console.log("per:"+per+" run:"+now);
-        fbBot.crawlerFB(token);
+    new CronJob('* * 7-23,0-1 * * *', function() {//http://sweet.io/p/ncb000gt/node-cron
+        try{
+            fbBot.crawlerFB(token);
+        }
+        catch(e){
+            console.log(e);
+        }
     }, null, true, 'Asia/Taipei');
     
+    new CronJob('00 1 9,19 * * *', function() {
+        transporter.sendMail({
+            from: 'crazyrabbit@boardgameinfor',
+            to: 'willow111333@gmail.com',
+            subject:'[FB] Bot Running',
+            text:"I'm alive. :)"
+        });
+
+    }, null, true, 'Asia/Taipei');
+
+
 }
