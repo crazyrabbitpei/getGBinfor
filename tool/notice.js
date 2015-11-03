@@ -1,3 +1,4 @@
+var myModule = require('../run');
 var fs = require('fs');
 var S = require('string');
 var he = require('he');
@@ -12,14 +13,20 @@ function convert(time,body,url,comment,from){//from:comment or article
         //data = body;
     }
     else if(from=="comment"){
-        if(comment.indexOf("新增")==-1&&comment.indexOf("降價")==-1&&comment.indexOf("更新")==-1&&comment.indexOf("調")==-1){
+        var list = JSON.parse(fs.readFileSync('./control/list'));
+        var comment_list = list['comment_track'];
+        var comments = comment_list.split(",");
+        var namecheck=0;
+        var match=0;
+        for(var i=0;i<comments.length;i++){
+            if((namecheck=comment.indexOf(comments[i]))!=-1){
+                match++;
+            }
+        }
+        if(match==0){
             return;
         }
     }
-    /*
-    console.log("[time:"+time+" body:"+body+"\nurl:"+url+"\nfrom:"+from+"]");
-    return ;
-    */
     if(typeof body == "undefined"){
         return;   
     }
@@ -28,18 +35,13 @@ function convert(time,body,url,comment,from){//from:comment or article
         if(game!=-1&&type!=-1){
             if(from=="ori"){
                 record = "Match:"+matchlist+"\nMatch nums:"+matchnums+"\nTime:"+time+"\n\n"+body+"\n\nLink:"+url;
-
+                mailto(matchlist,record);
             }
             else if(from=="comment"){
                 record = "Match:"+matchlist+"\nMatch nums:"+matchnums+"\nTime:"+time+"\n\nComment:"+comment+"\n\nOri:\n"+body+"\n\nLink:"+url;
-
+                mailto(matchlist,record);
             }
-    transporter.sendMail({
-        from: 'crazyrabbit@boardgameinfor',
-        to: '',
-        subject:'[FB] '+matchlist,
-        text:record
-    });
+
         }
     });
 }
@@ -47,20 +49,25 @@ function convert(time,body,url,comment,from){//from:comment or article
 
 function findBoardGame(body,callback){
     var gamelist = JSON.parse(fs.readFileSync('./control/list'));
-    var game = gamelist['game'];
+    var game = gamelist['item'];
     var type = gamelist['type'];
     var match = gamelist['match'];
     var nomatch = gamelist['not'];
     var game_matchnums=0;
     var namecheck=-1,typecheck=0,nomatchcheck=0;
     var games = game.split(",");
-    var matchlist="none";
+    var matchlist="";
     body =  body.toLowerCase();
     if(type=="none"){
         for(var i=0;i<games.length;i++){
-            //console.log("["+i+"]games:"+games[i]);
             if((namecheck=body.indexOf(games[i]))!=-1){
-                matchlist+=","+games[i];
+                console.log("["+i+"]games:"+games[i]);
+                if(game_matchnums!=0){
+                    matchlist+=","+games[i];
+                }
+                else{
+                    matchlist+=games[i];
+                }
                 game_matchnums++;
             }
         }
@@ -82,9 +89,13 @@ function findBoardGame(body,callback){
         if((typecheck=body.indexOf(type))!=-1){
             for(var i=0;i<games.length;i++){
                 if((namecheck=body.indexOf(games[i]))!=-1){
-                    matchlist+=matchlist+","+games[i];
+                    if(game_matchnums!=0){
+                        matchlist+=","+games[i];
+                    }
+                    else{
+                        matchlist+=games[i];
+                    }
                     game_matchnums++;
-                }
             }
             if(game_matchnums==0){//no match game
                 callback(-1,0,1,matchlist);
@@ -104,5 +115,45 @@ function findBoardGame(body,callback){
         }
     }
 }
+
+function findComment(content,fin){
+    var list = JSON.parse(fs.readFileSync('./control/list'));
+    var comment_list = list['comment_track'];
+    var comments = comment_list.split(",");
+    var namecheck=0;
+    var match=0;
+    for(var i=0;i<comments.length;i++){
+        if((namecheck=content.indexOf(comments[i]))!=-1){
+            match++;
+        }
+    }
+    fin(match);
+}
+
+function mailto(matchlist,record)
+{
+    var tomail = myModule.tomail;
+    var frommail = myModule.frommail;
+    console.log("tomail:"+tomail);
+    console.log("frommail:"+frommail);
+    
+    transporter.sendMail({
+        from:frommail,
+        to:tomail,
+        subject:'[FB] '+matchlist,
+        text:record
+    },function(error,info){
+        if(error){
+            if(error){
+                fs.appendFile(dir+"/"+groupid+"/err_log","Can't send mail:"+error+"\n",function(){});
+
+            }
+            return;
+        }
+    });
+
+}
+
 exports.convert = convert;
 //exports.findBoardGame = findBoardGame;
+
