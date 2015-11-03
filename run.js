@@ -24,10 +24,14 @@ try {
     var limit = service1['limit'];
     var dir = service1['dir'];
     var depth = service1['depth'];
+    var readInterval = service1['readInterval'];
 
     service2 = JSON.parse(fs.readFileSync('./service/shadowap'));
     var appid = service2['id'];
     var yoyo = service2['yoyo'];
+    var tomail = service2['tomail'];
+    var frommail = service2['frommail'];
+    var mailNoticeTime = service2['mailNoticeTime'];
 
     exports.groupid=groupid;
     exports.version=version;
@@ -36,6 +40,8 @@ try {
     exports.depth=depth;
     exports.appid=appid;
     exports.yoyo=yoyo;
+    exports.tomail=tomail;
+    exports.frommail=frommail;
     //console.log("id:"+appid+" yoyo:"+yoyo);
     //console.log("https://graph.facebook.com/oauth/access_token?client_id="+appid+"&client_secret="+yoyo+"&grant_type=client_credentials");
 
@@ -66,7 +72,7 @@ finally{
             return;
         }
         else{
-            setBot(token);       
+            setBot(token,tomail,frommail,readInterval,mailNoticeTime);       
         }
     });
 }
@@ -79,7 +85,7 @@ function get_accessToken(fin){
     },function(error, response, body){
         var token = JSON.parse(body);
         if(token['error']){
-            fs.appendFile(dir+"/"+groupid+"/err_log",body,function(){});
+            fs.appendFile(dir+"/"+groupid+"/err_log","get_accessToken:"+body+"\n",function(){});
             fin("error");
             return;
         }
@@ -90,11 +96,8 @@ function get_accessToken(fin){
 
 }
 
-function setBot(token){
-    //console.log("access:"+token);
-    //fbBot.crawlerFB(token);
-    var per=1;
-    new CronJob('* * 7-23,0-1 * * *', function() {//http://sweet.io/p/ncb000gt/node-cron
+function setBot(token,tomail,frommail,readInter,mailNoticeT){
+    new CronJob(readInter, function() {//http://sweet.io/p/ncb000gt/node-cron
         try{
             fbBot.crawlerFB(token);
         }
@@ -103,15 +106,18 @@ function setBot(token){
         }
     }, null, true, 'Asia/Taipei');
     
-    new CronJob('00 1 9,19 * * *', function() {
+    new CronJob(mailNoticeT, function() {
         transporter.sendMail({
-            from: 'crazyrabbit@boardgameinfor',
-            to: 'willow111333@gmail.com',
+            from:frommail,
+            to:tomail,
             subject:'[FB] Bot Running',
             text:"I'm alive. :)"
+        },function(error,info){
+            if(error){
+                fs.appendFile(dir+"/"+groupid+"/err_log","Can't send mail:"+error+"\n",function(){});
+            }
         });
 
     }, null, true, 'Asia/Taipei');
-
 
 }
