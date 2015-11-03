@@ -96,6 +96,8 @@ function findBoardGame(body,callback){
                         matchlist+=games[i];
                     }
                     game_matchnums++;
+
+                }
             }
             if(game_matchnums==0){//no match game
                 callback(-1,0,1,matchlist);
