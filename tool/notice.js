@@ -50,18 +50,18 @@ function convert(time,body,url,comment,from){//from:comment or article
 function findBoardGame(body,callback){
     var gamelist = JSON.parse(fs.readFileSync('./control/list'));
     var game = gamelist['item'];
-    var type = gamelist['type'];
-    var match = gamelist['match'];
-    var nomatch = gamelist['not'];
+    //var type = gamelist['type'];
+    //var match = gamelist['match'];
+    //var nomatch = gamelist['not'];
     var game_matchnums=0;
     var namecheck=-1,typecheck=0,nomatchcheck=0;
     var games = game.split(",");
     var matchlist="";
     body =  body.toLowerCase();
-    if(type=="none"){
+    //if(type=="none"){
         for(var i=0;i<games.length;i++){
             if((namecheck=body.indexOf(games[i]))!=-1){
-                console.log("["+i+"]games:"+games[i]);
+                //console.log("["+i+"]games:"+games[i]);
                 if(game_matchnums!=0){
                     matchlist+=","+games[i];
                 }
@@ -78,13 +78,16 @@ function findBoardGame(body,callback){
             callback(2,game_matchnums,0,matchlist);
             //console.log("["+i+"]games:"+games[i]);
         }
+        /*
         else if(match<=game_matchnums){//match at least [match] 
             callback(1,game_matchnums,0,matchlist);
         }
         else if(match>game_matchnums){//match nums less than specify range
             callback(0,game_matchnums,0,matchlist);
         }
-    }
+        */
+    //}
+    /*
     else{
         if((typecheck=body.indexOf(type))!=-1){
             for(var i=0;i<games.length;i++){
@@ -116,6 +119,7 @@ function findBoardGame(body,callback){
             callback(0,0,-1,matchlist);
         }
     }
+    */
 }
 
 function findComment(content,fin){
